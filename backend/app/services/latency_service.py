@@ -20,8 +20,6 @@ def save_latency(db, user_id, success, times):
         user_id=user_id,
         success=success,
         upload_time_ms=times.get("upload"),
-        preprocess_time_ms=times.get("preprocess"),
-        detection_time_ms=times.get("detection"),
         embedding_time_ms=times.get("embedding"),
         db_query_time_ms=times.get("db_query"),
         decision_time_ms=times.get("decision"),

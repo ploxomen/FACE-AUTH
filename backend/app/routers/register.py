@@ -2,7 +2,7 @@ from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import User
-from ..services.face_service import get_face_embedding
+from ..services.face_service import get_face_embedding, FaceDetectionError # Importamos la excepción
 
 router = APIRouter(prefix="/auth", tags=["Register"])
 
@@ -13,19 +13,26 @@ async def register_user(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    image_bytes = await file.read()
-    embedding = get_face_embedding(image_bytes)
+    try:
+        image_bytes = await file.read()
+        embedding = get_face_embedding(image_bytes)
 
-    if embedding is None:
-        raise HTTPException(status_code=400, detail="No face detected")
+        if embedding is None:
+            raise HTTPException(status_code=400, detail="Error al procesar el rostro.")
 
-    user = User(
-        name=name,
-        email=email,
-        embedding=embedding.tolist()
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+        user = User(
+            name=name,
+            email=email,
+            embedding=embedding.tolist()
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
 
-    return {"message": "User registered", "user_id": user.id}
+        return {"message": "User registered", "user_id": user.id}
+
+    except FaceDetectionError as e:
+        # Aquí atrapamos el error de "no hay rostro" o "múltiples rostros"
+        raise HTTPException(status_code=400, detail=e.message)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")

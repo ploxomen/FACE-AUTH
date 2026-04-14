@@ -23,8 +23,6 @@ class LoginLatencyDetail(Base):
     success = Column(Boolean, nullable=False)
 
     upload_time_ms = Column(Float)
-    preprocess_time_ms = Column(Float)
-    detection_time_ms = Column(Float)
     embedding_time_ms = Column(Float)
     db_query_time_ms = Column(Float)
     decision_time_ms = Column(Float)

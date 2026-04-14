@@ -1,6 +1,3 @@
---CREAMOS LA BASE DE DATOS
-CREATE DATABASE IF NOT EXISTS face_auth;
-
 -- Habilitar la extensión pgvector
 CREATE EXTENSION IF NOT EXISTS vector;
 
@@ -20,8 +17,6 @@ CREATE TABLE IF NOT EXISTS login_latency_details (
     success BOOLEAN NOT NULL,
 
     upload_time_ms FLOAT,
-    preprocess_time_ms FLOAT,
-    detection_time_ms FLOAT,
     embedding_time_ms FLOAT,
     db_query_time_ms FLOAT,
     decision_time_ms FLOAT,

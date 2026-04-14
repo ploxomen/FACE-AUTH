@@ -8,7 +8,7 @@ import os
 
 router = APIRouter(prefix="/auth", tags=["Facial Login"])
 
-THRESHOLD = float(os.getenv("THRESHOLD", 0.6))
+THRESHOLD = float(os.getenv("THRESHOLD", 0.4))
 
 @router.post("/login")
 async def facial_login(
@@ -16,7 +16,7 @@ async def facial_login(
     db: Session = Depends(get_db)
 ):
     tracker = LatencyTracker()
-
+    
     tracker.start("upload")
     image_bytes = await file.read()
     tracker.stop("upload")
@@ -32,16 +32,21 @@ async def facial_login(
         return {"status": "No face detected", "latency": times}
 
     tracker.start("db_query")
-    result = (
-        db.query(User)
-        .order_by(User.embedding.l2_distance(embedding))
+    query_result = (
+        db.query(User, User.embedding.l2_distance(embedding).label("dist"))
+        .order_by("dist")
         .first()
     )
     tracker.stop("db_query")
 
     tracker.start("decision")
-    success = result is not None and \
-              result.embedding.l2_distance(embedding) < THRESHOLD
+    # Desempaquetamos el resultado: 'result' es el modelo User, 'distance' es el float calculado por Postgres
+    success = False
+    result = None
+    
+    if query_result:
+        result, distance = query_result
+        success = distance < THRESHOLD
     tracker.stop("decision")
 
     times = tracker.times
