@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: face_auth_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - face_network
+
+  backend:
+    build: ./backend
+    container_name: face_auth_backend
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      THRESHOLD: ${THRESHOLD}
+    ports:
+      - "8000:8000"
+    # --- CAMBIOS AQUÍ ---
+    volumes:
+      - ./backend:/app  # Mapea tu carpeta local a la carpeta de la app en el contenedor
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # --------------------
+    networks:
+      - face_network
+
+  adminer:
+    image: adminer
+    container_name: face_auth_adminer
+    restart: always
+    ports:
+      - "8090:8080" # Adminer suele usar el 8080 interno, corregido el mapeo
+    networks:
+      - face_network
+
+volumes:
+  postgres_data:
+
+networks:
+  face_network:

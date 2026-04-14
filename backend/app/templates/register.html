@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro Facial</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+
+    <div class="bg-white shadow-lg rounded-xl p-8 w-full max-w-md">
+        <h1 class="text-2xl font-bold text-center text-gray-800 mb-6">
+            Registro Facial
+        </h1>
+
+        <form id="registerForm" class="space-y-4">
+            <!-- Nombre -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Nombre</label>
+                <input
+                    type="text"
+                    name="name"
+                    required
+                    class="mt-1 w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Ingresa tu nombre"
+                />
+            </div>
+
+            <!-- Email -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Correo electrónico</label>
+                <input
+                    type="email"
+                    name="email"
+                    required
+                    class="mt-1 w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="ejemplo@correo.com"
+                />
+            </div>
+
+            <!-- Video en vivo -->
+            <div class="text-center">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Cámara
+                </label>
+                <video id="video" autoplay playsinline
+                    class="w-full rounded-lg border"></video>
+            </div>
+
+            <!-- Canvas oculto para la captura -->
+            <canvas id="canvas" class="hidden"></canvas>
+
+            <!-- Vista previa -->
+            <div class="text-center">
+                <img id="preview" class="hidden mt-2 rounded-lg border" />
+            </div>
+
+            <!-- Botones -->
+            <div class="flex gap-2">
+                <button
+                    type="button"
+                    id="captureBtn"
+                    class="w-1/2 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition">
+                    📸 Capturar
+                </button>
+
+                <button
+                    type="submit"
+                    class="w-1/2 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                    Registrar
+                </button>
+            </div>
+        </form>
+
+        <!-- Mensaje de respuesta -->
+        <div id="responseMessage" class="mt-4 text-center text-sm"></div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const preview = document.getElementById('preview');
+        const captureBtn = document.getElementById('captureBtn');
+        const form = document.getElementById('registerForm');
+        const responseMessage = document.getElementById('responseMessage');
+
+        let imageBlob = null;
+
+        // Acceder a la cámara
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 640, height: 480 },
+                    audio: false
+                });
+                video.srcObject = stream;
+            } catch (error) {
+                responseMessage.innerHTML =
+                    `<p class="text-red-600">❌ No se pudo acceder a la cámara.</p>`;
+            }
+        }
+
+        // Capturar imagen del video
+        captureBtn.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob((blob) => {
+                imageBlob = blob;
+
+                // Mostrar vista previa
+                const imageURL = URL.createObjectURL(blob);
+                preview.src = imageURL;
+                preview.classList.remove('hidden');
+            }, 'image/jpeg', 0.95);
+        });
+
+        // Enviar datos a la API
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            if (!imageBlob) {
+                responseMessage.innerHTML =
+                    `<p class="text-red-600">❌ Debes capturar una imagen primero.</p>`;
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('name', form.name.value);
+            formData.append('email', form.email.value);
+            formData.append('file', imageBlob, 'face.jpg');
+
+            try {
+                const response = await fetch('/register/', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    responseMessage.innerHTML =
+                        `<p class="text-green-600 font-semibold">
+                            ✅ Usuario registrado con ID: ${data.user_id}
+                         </p>`;
+                    form.reset();
+                    preview.classList.add('hidden');
+                    imageBlob = null;
+                } else {
+                    responseMessage.innerHTML =
+                        `<p class="text-red-600 font-semibold">
+                            ❌ Error: ${data.detail || 'No se pudo registrar'}
+                         </p>`;
+                }
+            } catch (error) {
+                responseMessage.innerHTML =
+                    `<p class="text-red-600 font-semibold">
+                        ❌ Error de conexión con la API
+                     </p>`;
+            }
+        });
+
+        // Iniciar la cámara al cargar la página
+        startCamera();
+    </script>
+
+</body>
+</html>
