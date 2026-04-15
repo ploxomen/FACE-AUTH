@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
-from app.routers import register, login
+from app.routers import register, login, updateDrive
 
 app = FastAPI(
     title="Facial Authentication API",
@@ -24,3 +24,4 @@ def read_root():
 # Incluir routers
 app.include_router(register.router)
 app.include_router(login.router)
+app.include_router(updateDrive.router)
