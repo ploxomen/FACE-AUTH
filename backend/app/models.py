@@ -11,7 +11,7 @@ class User(Base):
     email = Column(String(150), unique=True)
     embedding = Column(Vector(128), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-
+    id_drive = Column(String(500), nullable=True)
     latencies = relationship("LoginLatencyDetail", back_populates="user")
 
 
