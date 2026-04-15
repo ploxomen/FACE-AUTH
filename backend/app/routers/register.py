@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, BackgroundTasks
 import requests
 from sqlalchemy.orm import Session
 from ..database import get_db
@@ -7,8 +7,21 @@ from ..services.face_service import get_face_embedding, FaceDetectionError # Imp
 
 router = APIRouter(prefix="/auth", tags=["Register"])
 
+def send_webhook_task(image_bytes, filename, content_type, data):
+    files = {"data": (filename, image_bytes, content_type)}
+    try:
+        requests.post(
+            "https://n8n-periferico.duckdns.org/webhook/upload-face",
+            files=files,
+            data=data,
+            timeout=10 
+        )
+    except Exception as e:
+        print(f"Error enviando webhook: {e}")
+
 @router.post("/register")
 async def register_user(
+    background_tasks: BackgroundTasks,
     name: str = Form(...),
     email: str = Form(None),
     file: UploadFile = File(...),
@@ -34,13 +47,12 @@ async def register_user(
             "correo": email,
             "nombre": name
         }
-        files = {
-            "data": (file.filename, image_bytes, file.content_type)
-        }
-        requests.post(
-            "https://n8n-periferico.duckdns.org/webhook/upload-face",
-            files=files,
-            data=data
+        background_tasks.add_task(
+            send_webhook_task, 
+            image_bytes, 
+            file.filename, 
+            file.content_type, 
+            data
         )
         return {"message": "User registered", "user_id": user.id}
 
