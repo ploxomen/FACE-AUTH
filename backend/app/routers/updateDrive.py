@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
+from fastapi import APIRouter, UploadFile, Form, Depends, HTTPException
 from ..database import get_db
 from ..models import User
 from sqlalchemy.orm import Session
@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 router = APIRouter(prefix="/auth", tags=["Register"])
 
 @router.post("/update-drive")
-async def update_drive(user_id: int,drive_file_id: str,db: Session = Depends(get_db)):
+async def update_drive(user_id: int = Form(...),drive_file_id: str = Form(...),db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
