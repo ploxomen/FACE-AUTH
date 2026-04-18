@@ -7,6 +7,26 @@ from ..services.face_service import get_face_embedding, FaceDetectionError # Imp
 
 router = APIRouter(prefix="/auth", tags=["Register"])
 
+def send_perfil_plex(name):
+    url = "https://clients.plex.tv/api/v2/home/users/restricted"
+    headers = {
+        "X-Plex-Token": "zeyrHqj4WaF1xCVszLa8",
+        "X-Plex-Client-Identifier": "miapp123",
+    }
+    params = {
+        "sharingSettings[allowTuners]": "0",
+        "sharingSettings[allowSync]": "1",
+        "friendlyName": name,
+    }
+    try:
+        requests.post(
+            url,
+            headers=headers, 
+            params=params 
+        )
+    except Exception as e:
+        print(f"Error al enviar al PLEX: {e}")
+
 def send_webhook_task(image_bytes, filename, content_type, data):
     files = {"data": (filename, image_bytes, content_type)}
     try:
@@ -53,6 +73,10 @@ async def register_user(
             file.filename, 
             file.content_type, 
             data
+        )
+        background_tasks.add_task(
+            send_perfil_plex,
+            name
         )
         return {"message": "User registered", "user_id": user.id}
 

@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(150) UNIQUE,
     id_drive VARCHAR(500) NULL,
     embedding VECTOR(128) NOT NULL,
-    id_drive VARCHAR(500) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
